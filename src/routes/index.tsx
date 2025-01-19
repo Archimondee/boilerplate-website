@@ -12,6 +12,7 @@ const Home = () => {
             toast({
               title: 'This is title',
               description: 'This is description',
+              variant: 'success',
             });
           }}
         >

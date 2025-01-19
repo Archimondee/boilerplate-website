@@ -12,6 +12,7 @@ import { seo } from '@/utils/seo';
 import LoadingBar, { LoadingBarRef } from 'react-top-loading-bar';
 import { useEffect, useRef, useState } from 'react';
 import { Toaster } from '@/components/ui/toaster';
+import { useToast } from '@/hooks/use-toast';
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
@@ -75,29 +76,48 @@ function RootComponent() {
 function RootDocument({ children }: { children: React.ReactNode }) {
   const loadingBarRef = useRef<LoadingBarRef>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [_, setIsOnline] = useState(navigator.onLine);
+  const { toast } = useToast();
+
+  const handleOnline = () => {
+    setIsOnline(true);
+    toast({ description: 'You are back online!', variant: 'success' });
+  };
+
+  const handleOffline = () => {
+    setIsOnline(false);
+    toast({
+      description: 'You are offline. Check your connection.',
+      variant: 'destructive',
+    });
+  };
+
+  const checkReadyState = () => {
+    if (document.readyState === 'complete') {
+      setIsLoaded(true);
+      if (loadingBarRef.current) {
+        loadingBarRef.current.complete();
+      }
+    }
+  };
 
   useEffect(() => {
     if (loadingBarRef.current) {
       loadingBarRef.current.continuousStart();
     }
 
-    const checkReadyState = () => {
-      if (document.readyState === 'complete') {
-        setIsLoaded(true);
-        if (loadingBarRef.current) {
-          loadingBarRef.current.complete();
-        }
-      }
-    };
-
     checkReadyState();
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
     document.addEventListener('readystatechange', checkReadyState);
 
     return () => {
       document.removeEventListener('readystatechange', checkReadyState);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [toast]);
   return (
     <html>
       <head>
